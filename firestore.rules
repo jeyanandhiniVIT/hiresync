@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'vj834525@gmail.com'
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Applicants ---
+    function isValidApplicant(data) {
+      return data.fullName is string && data.fullName.size() <= 200 &&
+             data.fatherHusbandName is string && data.fatherHusbandName.size() <= 200 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.phone is string && data.phone.size() <= 50 &&
+             data.address is string && data.address.size() <= 1000 &&
+             data.maritalStatus in ['single', 'married', 'divorced', 'widowed'] &&
+             data.dateOfBirth is string &&
+             data.photoUrl is string && data.photoUrl.size() <= 1000 &&
+             data.role is string && data.role.size() <= 100 &&
+             data.qualification is string && data.qualification.size() <= 200 &&
+             data.collegeName is string && data.collegeName.size() <= 300 &&
+             data.universityName is string && data.universityName.size() <= 300 &&
+             data.passingYear is string && data.passingYear.size() <= 10 &&
+             data.resumeUrl is string && data.resumeUrl.size() <= 1000 &&
+             data.status in ['applied', 'short-listed', 'interviewed', 'rejected', 'hired'] &&
+             data.createdAt == request.time &&
+             data.updatedAt == request.time;
+    }
+
+    match /applicants/{applicantId} {
+      allow create: if isValidId(applicantId) &&
+                       isValidApplicant(incoming()) &&
+                       incoming().status == 'applied'; // Public can only start as 'applied'
+
+      allow read: if isAdmin();
+      allow list: if isAdmin();
+
+      allow update: if isAdmin() &&
+                    isValidApplicantUpdate(incoming()) && (
+                      // Transition status or add remarks
+                      incoming().diff(existing()).affectedKeys().hasAny(['status', 'interviewRemarks', 'interviewDate', 'updatedAt'])
+                    );
+
+      allow delete: if isAdmin();
+    }
+
+    function isValidApplicantUpdate(data) {
+      return data.updatedAt == request.time &&
+             data.fullName == existing().fullName && // Immutable
+             data.email == existing().email &&       // Immutable
+             data.role == existing().role;           // Immutable
+    }
+
+    // --- Jobs ---
+    match /jobs/{jobId} {
+      allow read: if true; // Public can see jobs
+      allow list: if true;
+
+      allow write: if isAdmin();
+    }
+
+    // --- Admins Collection ---
+    match /admins/{adminId} {
+      // Only admins can manage admins, or initial setup?
+      // For now, only read access if signed in (to check isAdmin)
+      allow read: if isSignedIn();
+      allow write: if false; // Managed via console or restricted script
+    }
+  }
+}

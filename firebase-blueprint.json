@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "applicant": {
+      "title": "Applicant",
+      "description": "Details of a job applicant",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string", "description": "Full name of the candidate" },
+        "fatherHusbandName": { "type": "string", "description": "Father or Husband's name" },
+        "email": { "type": "string", "format": "email", "description": "Email address" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "address": { "type": "string", "description": "Residential address" },
+        "maritalStatus": { "type": "string", "enum": ["single", "married", "divorced", "widowed"] },
+        "dateOfBirth": { "type": "string", "format": "date", "description": "Date of birth" },
+        "photoUrl": { "type": "string", "description": "URL to the candidate's photo" },
+        "role": { "type": "string", "description": "Role applied for" },
+        "qualification": { "type": "string", "description": "Highest qualification" },
+        "collegeName": { "type": "string", "description": "Name of the college" },
+        "universityName": { "type": "string", "description": "Name of the university" },
+        "passingYear": { "type": "string", "description": "Year of passing" },
+        "experience": { "type": "string", "description": "Years of experience" },
+        "resumeUrl": { "type": "string", "description": "URL to the resume in cloud storage" },
+        "status": {
+          "type": "string",
+          "enum": ["applied", "short-listed", "interviewed", "rejected", "hired"],
+          "description": "Current application status"
+        },
+        "interviewRemarks": { "type": "string", "description": "Notes from the interviewer" },
+        "interviewDate": { "type": "string", "format": "date-time", "description": "Scheduled interview time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fullName", "email", "role", "resumeUrl", "status", "createdAt", "updatedAt"]
+    },
+    "job": {
+      "title": "Job Posting",
+      "description": "Details of an available job role",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "department": { "type": "string" },
+        "description": { "type": "string" },
+        "requirements": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "active", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/applicants/{applicantId}": {
+      "schema": "applicant",
+      "description": "Collection of job applications"
+    },
+    "/jobs/{jobId}": {
+      "schema": "job",
+      "description": "Collection of available positions"
+    }
+  }
+}
